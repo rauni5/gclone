@@ -16,6 +16,10 @@ go build -o gclone .
 go test ./...
 ```
 
+Once you have a built `gclone`, you can let it do the same for itself:
+`./gclone rauni5/gclone my-copy` clones, downloads modules, and writes a `SETUP_GUIDE.md`;
+`./gclone verify my-copy` builds it. This is how we check the Go support.
+
 Try it on a throwaway repository:
 
 ```bash
@@ -31,6 +35,7 @@ internal/
   project/               shared data model: Project, Pkg, Need, Companion, Report, Options
   analyze/               read a repository and build a Project (no side effects)
   adapter/node/          Node.js: packages, package manager, Node version, runnables
+  adapter/golang/        Go: go.mod, Go version check, build command
   compose/               docker compose file parsing
   envfile/               env example files: parse, classify, find variables used in code
   services/              which databases a project needs, start or install them, ask first

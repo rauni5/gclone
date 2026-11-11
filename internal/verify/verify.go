@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rauni5/gclone/internal/adapter/golang"
 	"github.com/rauni5/gclone/internal/adapter/node"
 	"github.com/rauni5/gclone/internal/analyze"
 	"github.com/rauni5/gclone/internal/proc"
@@ -218,6 +219,9 @@ func effectivePort(tb *tailBuf, r project.Runnable) int {
 }
 
 func startChecks(ctx context.Context, r project.Runnable, vo VerifyOptions) []project.Check {
+	if len(r.Start) == 0 && r.NoStart != "" {
+		return []project.Check{{Name: "start", Status: "skip", Detail: r.NoStart}}
+	}
 	if len(r.Start) == 0 {
 		return []project.Check{{Name: "start", Status: "warn", Detail: "no dev, start, serve or develop script in package.json, so it was not started"}}
 	}
@@ -356,7 +360,8 @@ func RunVerify(p *project.Project, o project.Options) *project.Report {
 			printCheck(c)
 		}
 	}
-	for _, r := range node.Runnables(p, vo.NoBuild) {
+	runnables := append(node.Runnables(p, vo.NoBuild), golang.Runnables(p, vo.NoBuild)...)
+	for _, r := range runnables {
 		if ctx.Err() != nil {
 			break
 		}
@@ -439,8 +444,8 @@ func updateGuideVerification(dir string, r *project.Report) {
 // verifyCommand implements `gclone verify [directory]`.
 func VerifyCommand(abs string, o project.Options) error {
 	p := analyze.AnalyzeProject(abs)
-	if len(p.Pkgs) == 0 {
-		return fmt.Errorf("no Node.js project found in %s, nothing to verify", abs)
+	if len(p.Pkgs) == 0 && len(p.GoModules) == 0 {
+		return fmt.Errorf("no Node.js or Go project found in %s, nothing to verify", abs)
 	}
 	rep := RunVerify(p, o)
 	updateGuideVerification(abs, rep)

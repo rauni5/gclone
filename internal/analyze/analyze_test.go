@@ -25,3 +25,21 @@ func TestAnalyzeProjectNodeExpress(t *testing.T) {
 		t.Errorf("want API_KEY missing from the example file, got %v", pkg.MissingVars)
 	}
 }
+
+func TestAnalyzeProjectGoModule(t *testing.T) {
+	dir, err := filepath.Abs(filepath.Join("..", "..", "testdata", "go-cli"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := AnalyzeProject(dir)
+	if len(p.GoModules) != 1 {
+		t.Fatalf("want 1 Go module, got %d", len(p.GoModules))
+	}
+	m := p.GoModules[0]
+	if m.Module != "example.com/go-cli" || m.GoWanted != "1.21" || !m.HasMain || m.BinName != "go-cli" {
+		t.Errorf("unexpected module: %+v", m)
+	}
+	for _, s := range p.OtherStacks {
+		t.Errorf("Go should not be listed as an unsupported stack: %s", s)
+	}
+}

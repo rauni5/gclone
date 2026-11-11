@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/rauni5/gclone/internal/adapter/golang"
 	"github.com/rauni5/gclone/internal/adapter/node"
 	"github.com/rauni5/gclone/internal/compose"
 	"github.com/rauni5/gclone/internal/envfile"
@@ -35,9 +36,23 @@ func AnalyzeProject(root string) *project.Project {
 		}
 		pkg.MissingVars = envfile.MissingVars(envfile.ScanEnvUsage(pkg.Dir, exclude), pkg.EnvVars)
 	}
+	if dirs := golang.FindModules(root); len(dirs) > 0 {
+		installed := golang.Installed()
+		for _, d := range dirs {
+			m, err := golang.Analyze(root, d, installed)
+			if err != nil {
+				p.Warnings = append(p.Warnings, fmt.Sprintf("%s: %v", fsx.Rel(root, d), err))
+				continue
+			}
+			p.GoModules = append(p.GoModules, m)
+			for _, w := range m.Warnings {
+				p.Warnings = append(p.Warnings, m.Rel+": "+w)
+			}
+		}
+	}
 	p.Composes = compose.FindComposes(root, p.Pkgs)
 	p.Needs = services.DetectNeeds(p)
-	p.OtherStacks = findOtherStacks(root)
+	p.OtherStacks = findOtherStacks(root, len(p.GoModules) > 0)
 	return p
 }
 
@@ -54,7 +69,7 @@ var otherMarkers = map[string]string{
 	"Gemfile":          "Ruby",
 }
 
-func findOtherStacks(root string) []string {
+func findOtherStacks(root string, goHandled bool) []string {
 	markers := make([]string, 0, len(otherMarkers))
 	for m := range otherMarkers {
 		markers = append(markers, m)
@@ -72,6 +87,9 @@ func findOtherStacks(root string) []string {
 	var out []string
 	for _, d := range dirs {
 		for _, m := range markers {
+			if m == "go.mod" && goHandled {
+				continue
+			}
 			if fsx.FileExists(filepath.Join(d, m)) {
 				s := fmt.Sprintf("%s (%s in %s)", otherMarkers[m], m, fsx.Rel(root, d))
 				if !seen[s] {

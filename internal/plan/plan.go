@@ -105,13 +105,29 @@ func BuildPlan(p *project.Project, o project.Options) []Planned {
 			plan = append(plan, step)
 		}
 	}
+	if !o.NoInstall {
+		for _, m := range p.GoModules {
+			m := m
+			plan = append(plan, Planned{
+				Where: m.Rel,
+				Name:  "Download Go modules",
+				Cmd:   "go mod download",
+				Run: func() error {
+					if _, err := exec.LookPath("go"); err != nil {
+						return fmt.Errorf("go was not found in PATH, install it from https://go.dev/dl/")
+					}
+					return proc.RunStream(m.Dir, false, "go", "mod", "download")
+				},
+			})
+		}
+	}
 	return plan
 }
 
 func PrintPlan(p *project.Project, plan []Planned, o project.Options) {
 	fmt.Println()
-	if len(p.Pkgs) == 0 {
-		fmt.Println("No Node.js project found (no package.json at the root or one level down).")
+	if len(p.Pkgs) == 0 && len(p.GoModules) == 0 {
+		fmt.Println("No Node.js or Go project found (no package.json or go.mod at the root or one level down).")
 		if len(p.OtherStacks) > 0 {
 			fmt.Println("Detected other stacks, which gclone v" + buildinfo.Version + " does not set up yet:")
 			for _, s := range p.OtherStacks {
@@ -123,6 +139,13 @@ func PrintPlan(p *project.Project, plan []Planned, o project.Options) {
 	}
 
 	fmt.Println("Detected:")
+	for _, m := range p.GoModules {
+		line := fmt.Sprintf("  - %s: %s, Go", m.Rel, m.Module)
+		if m.GoWanted != "" {
+			line += " " + m.GoWanted
+		}
+		fmt.Println(line)
+	}
 	for _, pkg := range p.Pkgs {
 		line := fmt.Sprintf("  - %s: %s, %s", pkg.Rel, pkg.Name, pkg.PM)
 		if pkg.Framework != "" {
@@ -213,6 +236,13 @@ func PrintNext(p *project.Project) {
 			}
 			fmt.Printf("  %s%s\n", prefix, pkg.PM+" run "+s)
 		}
+	}
+	for _, m := range p.GoModules {
+		prefix := ""
+		if m.Rel != "." {
+			prefix = "cd " + m.Rel + " && "
+		}
+		fmt.Printf("  %sgo test ./...\n", prefix)
 	}
 	fmt.Println("  Open SETUP_GUIDE.md for the values you still need to set.")
 }

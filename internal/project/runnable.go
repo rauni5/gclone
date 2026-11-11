@@ -8,6 +8,7 @@ type Runnable struct {
 	Dir         string
 	Build       []string // nil when there is nothing to build
 	Start       []string // nil when there is no way to start it
+	NoStart     string   // why nothing is started, shown instead of a warning
 	Port        int      // 0 when unknown
 	PortFrom    string
 	ExampleName string // env example file, empty when none

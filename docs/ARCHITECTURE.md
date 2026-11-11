@@ -61,9 +61,11 @@ those paths as experimental.
 
 ## Planned: an adapter interface
 
-Today Node.js logic lives in `internal/adapter/node` (`AnalyzePkg`, `InstallCmd`, `Runnables`)
-but is called directly. The plan is to introduce an interface when the second ecosystem
-(Java) is added, so that the interface is shaped by two real cases instead of guessed.
+Node.js logic lives in `internal/adapter/node` and Go logic in `internal/adapter/golang`.
+They are called directly, and Go modules are kept in `Project.GoModules` next to the Node
+`Project.Pkgs`. The plan is to introduce a shared interface when the Java adapter is added, so
+that the interface is shaped by three real cases instead of guessed. Both adapters already
+produce `project.Runnable` values, which is the one seam `verify` uses today.
 
 A sketch, **not implemented and open to change**:
 

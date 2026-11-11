@@ -18,8 +18,8 @@ starting a database, and discovering that the backend lives in a different repos
 **asks before it changes anything on your machine**, sets it up, checks that the app
 really starts, and writes a `SETUP_GUIDE.md` that says what is left for you to decide.
 
-> **Status: early (v0.1).** Node.js projects only. Java, Flutter and Python are detected and
-> reported but not set up yet. See [what works today](#supported-today) and the
+> **Status: early (v0.1).** Node.js projects, plus basic Go support (gclone sets up itself). Java,
+> Flutter and Python are detected and reported but not set up yet. See [what works today](#supported-today) and the
 > [roadmap](#roadmap). Feedback from real repositories is the most useful thing you can give.
 
 ## Demo
@@ -195,6 +195,7 @@ gclone verify
 |---|---|
 | Node.js with npm | Tested end to end: clone, install, `.env`, verify |
 | Node.js with pnpm, yarn, bun | Detected and invoked, not tested on real projects |
+| Go modules | `go.mod` read, installed Go compared with the `go` / `toolchain` line, `go mod download`, build check in `verify`. Nothing is started. Tested on gclone itself and one small fixture |
 | Node version check | `.nvmrc`, `.node-version`, `.tool-versions`, `engines`. It warns, it does not switch versions (use nvm, fnm or mise for that) |
 | Repository layout | Root plus one folder level. Workspaces are analyzed at the root only |
 | MongoDB, PostgreSQL, MySQL, Redis | Detection tested. Starting them in Docker tested with a stand-in `docker` command, not with a real Docker engine |
@@ -217,7 +218,7 @@ flowchart LR
 | Component | Package | Job |
 |---|---|---|
 | CLI and flow | `internal/cli` | Argument parsing, `setupRepo`, prompts |
-| Detection | `internal/analyze`, `internal/adapter/node`, `internal/envfile`, `internal/compose` | Packages, package manager, Node version, env files, compose files |
+| Detection | `internal/analyze`, `internal/adapter/node`, `internal/adapter/golang`, `internal/envfile`, `internal/compose` | Packages, package manager, Node version, env files, compose files |
 | Plan and execute | `internal/plan` | Builds the list of steps, runs them |
 | Services | `internal/services`, `internal/docker`, `internal/installer` | Needed databases, Docker states, install and start options |
 | Other repositories | `internal/repos` | Finds, asks about and sets up dependent repositories |

@@ -9,6 +9,10 @@ include breaking changes.
 
 ### Added
 
+- Go support: gclone reads `go.mod`, warns when the installed Go is older than the module
+  asks for, runs `go mod download`, and `verify` builds the module. gclone can now set up
+  its own repository.
+- Restructured into `main.go` plus `internal/` packages, with a Makefile and test fixtures.
 - Release tooling: `scripts/build-release.sh`, a release workflow that publishes archives
   and SHA-256 checksums, CI and lint workflows.
 - Contributor documentation, issue and pull request templates, security and support policies.

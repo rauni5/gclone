@@ -53,6 +53,19 @@ type Compose struct {
 	Started     bool
 }
 
+// GoModule is one Go module (a directory with a go.mod) inside the repository.
+type GoModule struct {
+	Dir       string
+	Rel       string
+	Module    string // module path from go.mod
+	GoWanted  string // go directive, for example "1.24"
+	Toolchain string // toolchain directive, empty when absent
+	Installed string // installed Go version, empty when Go is not installed
+	HasMain   bool   // main.go at the module root
+	BinName   string // name used when building the binary
+	Warnings  []string
+}
+
 // Project is the analysed repository.
 type Project struct {
 	URL         string
@@ -61,6 +74,7 @@ type Project struct {
 	DockerState string // "", "ready", "stopped", "missing" or "denied"
 	Executed    bool
 	Pkgs        []*Pkg
+	GoModules   []*GoModule
 	Composes    []*Compose
 	Needs       []*Need
 	Companions  []*Companion

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rauni5/gclone/internal/adapter/golang"
 	"github.com/rauni5/gclone/internal/buildinfo"
 	"github.com/rauni5/gclone/internal/project"
 	"github.com/rauni5/gclone/internal/repos"
@@ -123,6 +124,30 @@ func WriteGuide(p *project.Project) (string, error) {
 			}
 			w("")
 		}
+	}
+
+	for _, m := range p.GoModules {
+		title := m.Module
+		if m.Rel != "." {
+			title += " (`" + m.Rel + "`)"
+		}
+		w("### %s", title)
+		w("")
+		stack := "Go"
+		if m.GoWanted != "" {
+			stack += " " + m.GoWanted
+		}
+		w("Stack: %s", stack)
+		w("")
+		w("```bash")
+		if m.Rel != "." {
+			w("cd %s", m.Rel)
+		}
+		w("go mod download                 # dependencies")
+		w("%s", strings.Join(golang.BuildArgs(m), " "))
+		w("go test ./...                   # tests")
+		w("```")
+		w("")
 	}
 
 	// Config changes

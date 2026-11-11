@@ -207,7 +207,7 @@ func setupRepo(abs string, o project.Options, depth int) (*project.Project, erro
 	plan.PrintPlan(p, steps, o)
 	services.PrintNeeds(p, o)
 	repos.PrintCompanions(p)
-	if len(p.Pkgs) == 0 {
+	if len(p.Pkgs) == 0 && len(p.GoModules) == 0 {
 		return p, nil
 	}
 	if o.DryRun {
