@@ -16,6 +16,8 @@ include breaking changes.
 - Release tooling: `scripts/build-release.sh`, a release workflow that publishes archives
   and SHA-256 checksums, CI and lint workflows.
 - Contributor documentation, issue and pull request templates, security and support policies.
+- `scripts/install.ps1` and `scripts/install.sh` run `go install` and add Go's bin folder to
+  the PATH when it is missing.
 
 ## [0.1.0] - first release, not yet tagged
 

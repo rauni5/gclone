@@ -131,7 +131,21 @@ go install github.com/rauni5/gclone@latest
 ```
 
 Make sure Go's bin folder is on your `PATH` (`$(go env GOPATH)/bin`, usually `~/go/bin`;
-on Windows `%USERPROFILE%\go\bin`).
+on Windows `%USERPROFILE%\go\bin`). If `gclone` is "not recognized" after installing, that
+is the reason. The install scripts do both steps for you:
+
+```powershell
+# Windows (PowerShell), from a clone of this repository
+.\scripts\install.ps1
+```
+
+```bash
+# Linux and macOS, from a clone of this repository
+scripts/install.sh
+```
+
+Both run `go install` and add the bin folder to your PATH if it is missing. Open a new
+terminal afterwards.
 
 **Release binaries.** Each release on the
 [Releases page](https://github.com/rauni5/gclone/releases) carries archives for Linux
