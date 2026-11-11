@@ -1,0 +1,32 @@
+name: Documentation
+description: Something in the docs is wrong, missing or confusing
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Where is the problem?
+      description: A file name or a link, for example `README.md`, section "Install".
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+      description: If a command or claim in the docs did not match what gclone really does, paste both.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to fix it yourself?
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true

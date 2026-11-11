@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest an improvement or a new capability
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        gclone aims to get an unfamiliar repository running with the least friction. Requests
+        that serve that goal are the most likely to be accepted.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation, ideally with a real repository you tried.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like gclone to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Including doing it with another tool such as mise, Rex or a Dev Container.
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Would this change the user's machine?
+      description: Installing, starting or running things must always ask first.
+      options:
+        - No, it only reads or reports
+        - Yes, it installs or starts something
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to work on this?
+      options:
+        - "Yes, I would like to try"
+        - "Yes, with some guidance"
+        - "No, I am just suggesting it"
+    validations:
+      required: true
