@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
-	"github.com/rauni5/gclone/internal/adapter/golang"
-	"github.com/rauni5/gclone/internal/adapter/java"
+	"github.com/rauni5/gclone/internal/adapters"
 	"github.com/rauni5/gclone/internal/buildinfo"
 	"github.com/rauni5/gclone/internal/project"
 	"github.com/rauni5/gclone/internal/repos"
@@ -61,10 +59,8 @@ func WriteGuide(p *project.Project) (string, error) {
 	// Warnings
 	var warns []string
 	warns = append(warns, p.Warnings...)
-	for _, pkg := range p.Pkgs {
-		for _, x := range pkg.Warnings {
-			warns = append(warns, pkg.Rel+": "+x)
-		}
+	for _, a := range adapters.All() {
+		warns = append(warns, a.Warnings(p)...)
 	}
 	if len(warns) > 0 {
 		w("## Warnings")
@@ -78,8 +74,12 @@ func WriteGuide(p *project.Project) (string, error) {
 	// Run it
 	w("## Run it")
 	w("")
-	if len(p.Pkgs) > 1 {
-		w("This repo has %d packages. Run each one in its own terminal.", len(p.Pkgs))
+	units := 0
+	for _, a := range adapters.All() {
+		units += a.Units(p)
+	}
+	if units > 1 {
+		w("This repo has %d projects. Run each one in its own terminal.", units)
 		w("")
 	}
 	for _, c := range p.Composes {
@@ -97,118 +97,17 @@ func WriteGuide(p *project.Project) (string, error) {
 		w("```")
 		w("")
 	}
-	for _, pkg := range p.Pkgs {
-		title := pkg.Name
-		if pkg.Rel != "." {
-			title += " (`" + pkg.Rel + "`)"
-		}
-		w("### %s", title)
-		w("")
-		stack := pkg.PM
-		if pkg.Framework != "" {
-			stack = pkg.Framework + ", " + pkg.PM
-		}
-		w("Stack: %s", stack)
-		if port := project.PortFor(pkg); port != "" {
-			w("")
-			w("Expected port: %s", port)
-		}
-		w("")
-		w("```bash")
-		if pkg.Rel != "." {
-			w("cd %s", pkg.Rel)
-		}
-		if s := project.DevScript(pkg); s != "" {
-			w("%s run %s", pkg.PM, s)
-		} else {
-			w("# no dev/start script found in package.json, check the README")
-		}
-		w("```")
-		w("")
-		var others []string
-		for _, s := range []string{"build", "test", "lint", "migrate", "seed"} {
-			if c, ok := pkg.Scripts[s]; ok {
-				others = append(others, fmt.Sprintf("- `%s run %s`: `%s`", pkg.PM, s, c))
-			}
-		}
-		if len(others) > 0 {
-			w("Other scripts:")
-			w("")
-			for _, o := range others {
-				w("%s", o)
-			}
-			w("")
-		}
-	}
-
-	for _, m := range p.GoModules {
-		title := m.Module
-		if m.Rel != "." {
-			title += " (`" + m.Rel + "`)"
-		}
-		w("### %s", title)
-		w("")
-		stack := "Go"
-		if m.GoWanted != "" {
-			stack += " " + m.GoWanted
-		}
-		w("Stack: %s", stack)
-		w("")
-		w("```bash")
-		if m.Rel != "." {
-			w("cd %s", m.Rel)
-		}
-		w("go mod download                 # dependencies")
-		w("%s", strings.Join(golang.BuildArgs(m), " "))
-		w("go test ./...                   # tests")
-		w("```")
-		w("")
-	}
-
-	for _, j := range p.JavaProjects {
-		title := j.Rel
-		if j.Rel == "." {
-			title = filepath.Base(p.Dir)
-		}
-		w("### %s (Java, %s)", title, j.Build)
-		w("")
-		stack := "Java"
-		if j.JavaWanted > 0 {
-			stack += fmt.Sprintf(" %d", j.JavaWanted)
-		}
-		if j.SpringBoot {
-			stack = "Spring Boot, " + stack
-		}
-		w("Stack: %s", stack)
-		if j.SpringBoot && j.Port != "" {
-			w("")
-			w("Expected port: %s", j.Port)
-		}
-		w("")
-		w("```bash")
-		if j.Rel != "." {
-			w("cd %s", j.Rel)
-		}
-		if j.SpringBoot {
-			w("%s", java.Display(j, java.RunGoals(j)...))
-		}
-		w("%s   # build", java.Display(j, java.BuildGoals(j)...))
-		w("%s   # tests", java.Display(j, java.TestGoals()...))
-		w("```")
-		w("")
+	for _, a := range adapters.All() {
+		b.WriteString(a.Guide(p))
 	}
 
 	// Config changes
 	w("## What you may need to change")
 	w("")
 	any := false
-	for _, pkg := range p.Pkgs {
-		if guideEnv(&b, pkg) {
-			any = true
-		}
-	}
-	for _, j := range p.JavaProjects {
-		if guideJavaConfig(&b, j) {
+	for _, a := range adapters.All() {
+		for _, sec := range a.GuideConfig(p) {
+			b.WriteString(sec)
 			any = true
 		}
 	}
@@ -268,117 +167,6 @@ func WriteGuide(p *project.Project) (string, error) {
 	}
 	excludeFromGit(p.Dir, project.GuideName)
 	return path, nil
-}
-
-// guideEnv writes the env section for one package and reports whether it wrote anything.
-func guideEnv(b *strings.Builder, pkg *project.Pkg) bool {
-	if len(pkg.EnvVars) == 0 && len(pkg.MissingVars) == 0 {
-		return false
-	}
-	w := func(format string, a ...interface{}) { fmt.Fprintf(b, format+"\n", a...) }
-
-	w("### Environment: %s", verify.UnitLabel(pkg.Rel))
-	w("")
-	switch {
-	case pkg.EnvCreated:
-		w("`.env` was created from `%s` with its default values.", pkg.EnvExample)
-	case pkg.EnvExample != "":
-		w("`.env` already existed, so it was left untouched. Compare it with `%s`.", pkg.EnvExample)
-	default:
-		w("No example env file was found. These variables come from the source code.")
-	}
-	w("")
-
-	var blocking, review, ok []project.EnvVar
-	for _, v := range pkg.EnvVars {
-		switch v.Kind {
-		case "blocking":
-			blocking = append(blocking, v)
-		case "review":
-			review = append(review, v)
-		default:
-			ok = append(ok, v)
-		}
-	}
-	if len(blocking) > 0 {
-		w("**Set these first** (empty or placeholder, the app will likely fail without them):")
-		w("")
-		for _, v := range blocking {
-			w("- `%s`: %s", v.Key, describe(v))
-		}
-		w("")
-	}
-	if len(review) > 0 {
-		w("**Works on defaults, change for real use:**")
-		w("")
-		for _, v := range review {
-			// Values are deliberately not printed: example files sometimes hold real secrets.
-			w("- `%s`: %s", v.Key, describe(v))
-		}
-		w("")
-	}
-	if len(ok) > 0 {
-		keys := make([]string, 0, len(ok))
-		for _, v := range ok {
-			keys = append(keys, "`"+v.Key+"`")
-		}
-		sort.Strings(keys)
-		w("**Defaults that should be fine:** %s", strings.Join(keys, ", "))
-		w("")
-	}
-	if len(pkg.MissingVars) > 0 {
-		keys := make([]string, 0, len(pkg.MissingVars))
-		for _, k := range pkg.MissingVars {
-			keys = append(keys, "`"+k+"`")
-		}
-		w("**Read by the code but not in the example file** (check the README for what they should be): %s", strings.Join(keys, ", "))
-		w("")
-	}
-	return true
-}
-
-// guideJavaConfig lists the settings in application.properties or application.yml that need
-// attention. Values are not printed, only names and reasons.
-func guideJavaConfig(b *strings.Builder, j *project.JavaProject) bool {
-	var blocking, review []project.EnvVar
-	for _, v := range j.Config {
-		switch v.Kind {
-		case "blocking":
-			blocking = append(blocking, v)
-		case "review":
-			review = append(review, v)
-		}
-	}
-	if len(blocking) == 0 && len(review) == 0 {
-		return false
-	}
-	w := func(format string, a ...interface{}) { fmt.Fprintf(b, format+"\n", a...) }
-	w("### Configuration: %s (application config)", verify.UnitLabel(j.Rel))
-	w("")
-	if len(blocking) > 0 {
-		w("**Set these first:**")
-		w("")
-		for _, v := range blocking {
-			w("- `%s`: %s", v.Key, v.Reason)
-		}
-		w("")
-	}
-	if len(review) > 0 {
-		w("**Works on defaults, change for real use:**")
-		w("")
-		for _, v := range review {
-			w("- `%s`: %s", v.Key, v.Reason)
-		}
-		w("")
-	}
-	return true
-}
-
-func describe(v project.EnvVar) string {
-	if v.Comment != "" {
-		return v.Reason + ". Note from the example file: " + v.Comment
-	}
-	return v.Reason
 }
 
 // excludeFromGit keeps the generated guide out of `git status`.
