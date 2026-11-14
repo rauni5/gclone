@@ -3,6 +3,9 @@ package analyze
 import (
 	"path/filepath"
 	"testing"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 func TestAnalyzeProjectNodeExpress(t *testing.T) {
@@ -72,4 +75,76 @@ func TestAnalyzeProjectSpringMaven(t *testing.T) {
 	for _, s := range p.OtherStacks {
 		t.Errorf("Java should not be listed as unsupported: %s", s)
 	}
+}
+
+
+func TestAnalyzeProjectPortConflicts(t *testing.T) {
+    tests := []struct {
+        name       string
+        clientDep  string
+        serverDep  string
+        wantWarn   bool
+    }{
+        {
+            name:      "clashing ports",
+            clientDep: `"next": "*"`,
+            serverDep: `"@nestjs/core": "*"`,
+            wantWarn:  true,
+        },
+        {
+            name:      "non-clashing ports",
+            clientDep: `"next": "*"`,
+            serverDep: `"vite": "*"`,
+            wantWarn:  false,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            root := t.TempDir()
+
+            packages := map[string]string{
+                "client": tt.clientDep,
+                "server": tt.serverDep,
+            }
+
+            for dir, dep := range packages {
+                pkgDir := filepath.Join(root, dir)
+
+                if err := os.MkdirAll(pkgDir, 0755); err != nil {
+                    t.Fatal(err)
+                }
+
+                content := `{
+                    "name": "` + dir + `",
+                    "dependencies": {
+                        ` + dep + `
+                    }
+                }`
+
+                if err := os.WriteFile(
+                    filepath.Join(pkgDir, "package.json"),
+                    []byte(content),
+                    0644,
+                ); err != nil {
+                    t.Fatal(err)
+                }
+            }
+
+            p := AnalyzeProject(root)
+
+            found := false
+            for _, warning := range p.Warnings {
+                if strings.Contains(warning, "Multiple packages expect port") {
+                    found = true
+                    break
+                }
+            }
+
+            if found != tt.wantWarn {
+                t.Errorf("want warning %v, got %v; warnings: %v",
+                    tt.wantWarn, found, p.Warnings)
+            }
+        })
+    }
 }
