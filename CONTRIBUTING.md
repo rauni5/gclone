@@ -93,9 +93,16 @@ make check            # gofmt, vet and tests, same as CI
 Tests that need Node (`TestVerify*`) start real short-lived servers on free ports.
 
 **Faking Docker.** There is no Docker engine in most test environments. To test a Docker
-code path, put a small `docker` script first on `PATH` that records its arguments and
-returns what you want (for example `exit 1` for `info` to simulate a stopped engine). Real
-Docker behaviour should still be checked by hand before you claim it works.
+code path, use the helper in `internal/docker/fake_docker_test.go`:
+`NewFakeDocker(t, mode)` creates a temporary directory containing an executable
+`docker` script, prepends it to `PATH` for the test, and records the arguments it
+receives (`FakeDocker.Calls`). Supported modes: `FakeDockerReady`,
+`FakeDockerStopped`, `FakeDockerPermissionDenied`, and
+`FakeDockerImageDownloadFail`. Tests using it are `//go:build !windows` and skip
+on Windows with a clear reason because the helper writes a POSIX shell script.
+Use it to test `docker.State`, `docker.EnsureImage` and the OfferInstall
+decisions (`internal/services/offer_install_options_test.go`). Real Docker
+behaviour should still be checked by hand before you claim it works.
 
 ## Pull request workflow
 

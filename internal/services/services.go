@@ -450,6 +450,46 @@ type svcOption struct {
 	run   func() error
 }
 
+// offerInstallOptions reports the choices offerInstall presents for a service,
+// given the Docker engine state. nat is the native package-manager option when
+// available, and dockerInstall is the option to install Docker itself. It does
+// not prompt or run anything, so tests can check the OfferInstall decisions.
+func offerInstallOptions(state string, nat, dockerInstall *installer.Option, kind string) []svcOption {
+	dockerWhat := fmt.Sprintf("container gclone-%s, data kept in a volume", kind)
+	name := "gclone-" + kind
+	var opts []svcOption
+	switch state {
+	case "ready":
+		opts = append(opts, svcOption{
+			label: "Run it in Docker (" + dockerWhat + ")",
+			cmd:   "docker run " + name,
+			kind:  "docker",
+		})
+	case "stopped":
+		opts = append(opts, svcOption{
+			label: "Start Docker, then run it in Docker (" + dockerWhat + ")",
+			cmd:   "start docker, docker run " + name,
+			kind:  "docker",
+		})
+	}
+	if nat != nil {
+		label := "Install it with " + nat.Manager + "."
+		if nat.Note != "" {
+			label += " " + nat.Note
+		}
+		opts = append(opts, svcOption{label: label, cmd: nat.Manager + " install", kind: "native"})
+	}
+	if state == "missing" && dockerInstall != nil {
+		opts = append(opts, svcOption{
+			label: "Install Docker with " + dockerInstall.Manager + ", then run it in Docker. " + dockerInstall.Note,
+			cmd:   dockerInstall.Manager + " install docker",
+			kind:  "docker",
+			heavy: true,
+		})
+	}
+	return opts
+}
+
 func offerInstall(p *project.Project, o project.Options, n *project.Need) string {
 	d := svcDefs[n.Kind]
 	installed := proc.AnyBin(d.Bins)
@@ -470,18 +510,17 @@ func offerInstall(p *project.Project, o project.Options, n *project.Need) string
 			return runInDocker(n)
 		}
 	}
-	dockerWhat := fmt.Sprintf("container gclone-%s, data kept in a volume", n.Kind)
 
 	var opts []svcOption
 	switch state {
 	case "ready":
 		opts = append(opts, svcOption{
-			label: "Run it in Docker (" + dockerWhat + ")",
+			label: "Run it in Docker (" + fmt.Sprintf("container gclone-%s, data kept in a volume", n.Kind) + ")",
 			cmd:   "docker run gclone-" + n.Kind, kind: "docker", run: viaDocker(nil),
 		})
 	case "stopped":
 		opts = append(opts, svcOption{
-			label: "Start Docker, then run it in Docker (" + dockerWhat + ")",
+			label: "Start Docker, then run it in Docker (" + fmt.Sprintf("container gclone-%s, data kept in a volume", n.Kind) + ")",
 			cmd:   "start docker, docker run gclone-" + n.Kind, kind: "docker",
 			run: viaDocker(func() error {
 				if !docker.StartAndWait() {
