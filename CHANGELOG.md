@@ -7,6 +7,14 @@ include breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- Node.js, Go and Java now implement one shared `Adapter` interface, so adding an ecosystem
+  no longer means editing every stage. The "Detected:" list is now in the order Node.js, Go,
+  Java, and the guide says "This repo has N projects" across all ecosystems.
+
+## [0.1.1] - 2026-11-14
+
 ### Added
 
 - Plain-language hints when a setup step fails (npm dependency conflicts, missing build
@@ -24,7 +32,7 @@ include breaking changes.
   and SHA-256 checksums, CI and lint workflows.
 - Contributor documentation, issue and pull request templates, security and support policies.
 
-## [0.1.0] - first release, not yet tagged
+## [0.1.0]
 
 ### Added
 
@@ -52,3 +60,7 @@ include breaking changes.
 - The guide and terminal output list variable names and notes, not values from env files
   (exceptions: `PORT` as the expected port, and the login of a database container gclone
   creates).
+
+[Unreleased]: https://github.com/rauni5/gclone/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/rauni5/gclone/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/rauni5/gclone/releases/tag/v0.1.0
