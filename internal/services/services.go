@@ -34,15 +34,17 @@ var svcDefs = map[string]svcDef{
 	"postgres": {"PostgreSQL", 5432, []string{"postgres", "psql"}, "postgres:16", "/var/lib/postgresql/data"},
 	"mysql":    {"MySQL", 3306, []string{"mysqld", "mysql"}, "mysql:8", "/var/lib/mysql"},
 	"redis":    {"Redis", 6379, []string{"redis-server"}, "redis:7", "/data"},
+	"rabbitmq": {"RabbitMQ", 5672, []string{"rabbitmq-server"}, "rabbitmq:3", "/var/lib/rabbitmq"},
 }
 
-var kindOrder = []string{"mongodb", "postgres", "mysql", "redis"}
+var kindOrder = []string{"mongodb", "postgres", "mysql", "redis", "rabbitmq"}
 
 var DepKind = map[string]string{
 	"pg": "postgres", "postgres": "postgres", "pg-promise": "postgres",
 	"mysql": "mysql", "mysql2": "mysql",
 	"mongodb": "mongodb", "mongoose": "mongodb",
 	"redis": "redis", "ioredis": "redis",
+	"amqplib": "rabbitmq",
 }
 
 var prismaProvider = regexp.MustCompile(`datasource\s+\w+\s*\{[^}]*provider\s*=\s*"(\w+)"`)
@@ -67,7 +69,7 @@ func PrismaKind(dir string) string {
 	return ""
 }
 
-var urlSchemeRe = regexp.MustCompile(`^(postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|rediss?)://`)
+var urlSchemeRe = regexp.MustCompile(`^(postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|rediss?|amqps?)://`)
 
 func schemeKind(scheme string) string {
 	switch strings.ToLower(scheme) {
@@ -79,6 +81,8 @@ func schemeKind(scheme string) string {
 		return "mongodb"
 	case "redis", "rediss":
 		return "redis"
+	case "amqp", "amqps":
+		return "rabbitmq"
 	}
 	return ""
 }
@@ -200,7 +204,7 @@ func DetectNeeds(p *project.Project) []*project.Need {
 	return out
 }
 
-var imageKindRe = regexp.MustCompile(`(?i)(?:^|/)(postgres|postgresql|mysql|mariadb|mongo|mongodb|redis|valkey)(?::|@|$)`)
+var imageKindRe = regexp.MustCompile(`(?i)(?:^|/)(postgres|postgresql|mysql|mariadb|mongo|mongodb|redis|valkey|rabbitmq)(?::|@|$)`)
 
 func imageKind(img string) string {
 	m := imageKindRe.FindStringSubmatch(img)
@@ -214,9 +218,12 @@ func imageKind(img string) string {
 		return "mysql"
 	case "mongo", "mongodb":
 		return "mongodb"
-	default:
+	case "redis", "valkey":
 		return "redis"
+	case "rabbitmq":
+		return "rabbitmq"
 	}
+	return ""
 }
 
 // composeKinds lists the service kinds that docker compose files provide. With
