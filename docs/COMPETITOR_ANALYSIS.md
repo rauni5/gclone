@@ -18,7 +18,7 @@ before quoting any of this in the README.
 
 ## 2. Feature matrix
 
-`yes` = described on the page read. `not described` = the page did not say. `gclone` column is what is implemented and tested today (0.1.0).
+`yes` = described on the page read. `not described` = the page did not say. `gclone` column is what is implemented and tested today (0.1.1).
 
 | Capability | gclone | Rex | Bivvy | mise | Dev Containers | Ona |
 |---|---|---|---|---|---|---|
