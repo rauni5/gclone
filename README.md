@@ -90,7 +90,7 @@ The generated guide tells you what to do next:
 - **Environment triage.** Sorts variables into *must set* (empty or placeholder), *works on
   defaults, change for real use* (secrets, database URLs) and *fine*. It also lists variables
   the source code reads that the example file does not mention.
-- **Databases and services.** Detects MongoDB, PostgreSQL, MySQL and Redis from
+- **Databases and services.** Detects MongoDB, PostgreSQL, MySQL, Redis and RabbitMQ from
   dependencies, Prisma and connection URLs, and starts database services from a compose file.
   If one is missing it **asks** whether to run it in Docker or install it with your package
   manager. Handles Docker being missing, stopped, denied or unable to download an image.
@@ -200,8 +200,8 @@ gclone verify
 | Go modules | `go.mod` read, installed Go compared with the `go` / `toolchain` line, `go mod download`, build check in `verify`. Nothing is started. Tested on gclone itself and one small fixture |
 | Node version check | `.nvmrc`, `.node-version`, `.tool-versions`, `engines`. It warns, it does not switch versions (use nvm, fnm or mise for that) |
 | Repository layout | Root plus one folder level. Workspaces are analyzed at the root only |
-| MongoDB, PostgreSQL, MySQL, Redis | Detection tested. Starting them in Docker tested with a stand-in `docker` command, not with a real Docker engine |
-| Compose files | Database services only (postgres, mysql, mariadb, mongo, redis, valkey). It never starts your app's own containers |
+| MongoDB, PostgreSQL, MySQL, Redis, RabbitMQ | Detection tested. Starting them in Docker tested with a stand-in `docker` command, not with a real Docker engine |
+| Compose files | Database services only (postgres, mysql, mariadb, mongo, redis, valkey, rabbitmq). It never starts your app's own containers |
 | Java (Maven, Gradle), Flutter, Python, Go, Rust, PHP, Ruby | Detected and reported only. No setup yet |
 
 ## How it works

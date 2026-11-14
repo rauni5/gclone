@@ -43,7 +43,7 @@ var svcRe = regexp.MustCompile(`^([A-Za-z0-9_.-]+):\s*(#.*)?$`)
 
 var imageRe = regexp.MustCompile(`^image:\s*["']?([^"'\s#]+)`)
 
-var dbImage = regexp.MustCompile(`(?i)(^|/)(postgres|postgresql|mysql|mariadb|mongo|mongodb|redis|memcached|valkey)(:|@|$)`)
+var dbImage = regexp.MustCompile(`(?i)(^|/)(postgres|postgresql|mysql|mariadb|mongo|mongodb|redis|memcached|valkey|rabbitmq)(:|@|$)`)
 
 // parseCompose is a small line-based reader. It only needs service names and
 // image names, so it avoids a YAML dependency. Unusual layouts are skipped.
