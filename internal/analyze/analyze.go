@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rauni5/gclone/internal/adapter/golang"
+	"github.com/rauni5/gclone/internal/adapter/java"
 	"github.com/rauni5/gclone/internal/adapter/node"
 	"github.com/rauni5/gclone/internal/compose"
 	"github.com/rauni5/gclone/internal/envfile"
@@ -50,9 +51,23 @@ func AnalyzeProject(root string) *project.Project {
 			}
 		}
 	}
+	if dirs := java.FindProjects(root); len(dirs) > 0 {
+		installed := java.InstalledJava()
+		for _, d := range dirs {
+			j, err := java.Analyze(root, d, installed)
+			if err != nil {
+				p.Warnings = append(p.Warnings, fmt.Sprintf("%s: %v", fsx.Rel(root, d), err))
+				continue
+			}
+			p.JavaProjects = append(p.JavaProjects, j)
+			for _, w := range j.Warnings {
+				p.Warnings = append(p.Warnings, j.Rel+": "+w)
+			}
+		}
+	}
 	p.Composes = compose.FindComposes(root, p.Pkgs)
 	p.Needs = services.DetectNeeds(p)
-	p.OtherStacks = findOtherStacks(root, len(p.GoModules) > 0)
+	p.OtherStacks = findOtherStacks(root, handledMarkers(p))
 	return p
 }
 
@@ -69,7 +84,22 @@ var otherMarkers = map[string]string{
 	"Gemfile":          "Ruby",
 }
 
-func findOtherStacks(root string, goHandled bool) []string {
+// handledMarkers lists build files that an adapter already covers, so they are not
+// reported as unsupported stacks.
+func handledMarkers(p *project.Project) map[string]bool {
+	h := map[string]bool{}
+	if len(p.GoModules) > 0 {
+		h["go.mod"] = true
+	}
+	if len(p.JavaProjects) > 0 {
+		for _, f := range []string{"pom.xml", "build.gradle", "build.gradle.kts"} {
+			h[f] = true
+		}
+	}
+	return h
+}
+
+func findOtherStacks(root string, handled map[string]bool) []string {
 	markers := make([]string, 0, len(otherMarkers))
 	for m := range otherMarkers {
 		markers = append(markers, m)
@@ -87,7 +117,7 @@ func findOtherStacks(root string, goHandled bool) []string {
 	var out []string
 	for _, d := range dirs {
 		for _, m := range markers {
-			if m == "go.mod" && goHandled {
+			if handled[m] {
 				continue
 			}
 			if fsx.FileExists(filepath.Join(d, m)) {

@@ -16,6 +16,7 @@ type Step struct {
 	Cmd    string
 	Status string // "ok" or "failed"
 	Note   string
+	Hint   string // plain-language explanation of a failure, when one is known
 }
 
 // Pkg is one Node.js package directory inside the cloned repository.
@@ -66,20 +67,37 @@ type GoModule struct {
 	Warnings  []string
 }
 
+// JavaProject is one Maven or Gradle project, with Spring Boot details when present.
+type JavaProject struct {
+	Dir            string
+	Rel            string
+	Build          string // "maven" or "gradle"
+	Wrapper        bool   // mvnw or gradlew present
+	SpringBoot     bool
+	JavaWanted     int // major version the build file asks for, 0 when unknown
+	JavaInstalled  int // 0 when Java is not installed
+	Port           string
+	PortFromConfig bool
+	Config         []EnvVar          // application.properties or .yml, flattened
+	DepKinds       map[string]string // service kind -> dependency that implies it
+	Warnings       []string
+}
+
 // Project is the analysed repository.
 type Project struct {
-	URL         string
-	Dir         string
-	Commit      string
-	DockerState string // "", "ready", "stopped", "missing" or "denied"
-	Executed    bool
-	Pkgs        []*Pkg
-	GoModules   []*GoModule
-	Composes    []*Compose
-	Needs       []*Need
-	Companions  []*Companion
-	Verify      *Report
-	OtherStacks []string
-	Warnings    []string
-	Steps       []Step
+	URL          string
+	Dir          string
+	Commit       string
+	DockerState  string // "", "ready", "stopped", "missing" or "denied"
+	Executed     bool
+	Pkgs         []*Pkg
+	GoModules    []*GoModule
+	JavaProjects []*JavaProject
+	Composes     []*Compose
+	Needs        []*Need
+	Companions   []*Companion
+	Verify       *Report
+	OtherStacks  []string
+	Warnings     []string
+	Steps        []Step
 }

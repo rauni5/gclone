@@ -61,10 +61,9 @@ those paths as experimental.
 
 ## Planned: an adapter interface
 
-Node.js logic lives in `internal/adapter/node` and Go logic in `internal/adapter/golang`.
-They are called directly, and Go modules are kept in `Project.GoModules` next to the Node
-`Project.Pkgs`. The plan is to introduce a shared interface when the Java adapter is added, so
-that the interface is shaped by three real cases instead of guessed. Both adapters already
+Node.js logic lives in `internal/adapter/node`, Go in `internal/adapter/golang` and Java in
+`internal/adapter/java`. They are called directly, and each keeps its own list on `Project`
+(`Pkgs`, `GoModules`, `JavaProjects`). The next refactor is a shared interface, shaped by these three real cases instead of guessed. All three adapters already
 produce `project.Runnable` values, which is the one seam `verify` uses today.
 
 A sketch, **not implemented and open to change**:

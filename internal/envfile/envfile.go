@@ -31,6 +31,12 @@ var secretKey = regexp.MustCompile(`(?i)(secret|token|passw|api[_-]?key|private[
 //	blocking: empty or placeholder, the app probably will not run until it is set
 //	review:   has a working default, but should change for real use
 //	ok:       default is fine
+//
+// Classify says whether a setting must be set (blocking), should be reviewed or is fine.
+func Classify(key, val string) (string, string) {
+	return classify(key, val)
+}
+
 func classify(key, val string) (string, string) {
 	v := strings.TrimSpace(val)
 	if placeholder.MatchString(v) {
