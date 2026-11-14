@@ -34,6 +34,8 @@ internal/
   cli/                   arguments, and the flow for one repository (setupRepo)
   project/               shared data model: Project, Pkg, Need, Companion, Report, Options
   analyze/               read a repository and build a Project (no side effects)
+  adapter/               the Adapter interface; one folder per ecosystem below
+  adapters/              the list of adapters (add new ecosystems here)
   adapter/node/          Node.js: packages, package manager, Node version, runnables
   adapter/golang/        Go: go.mod, Go version check, build command
   adapter/java/          Java: Maven/Gradle, Spring Boot, application config, Java version

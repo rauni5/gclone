@@ -59,30 +59,38 @@ processes (`internal/verify/verify_test.go`). Docker flows were exercised with a
 `PATH`. That proves the control flow, not real Docker behaviour, which is why the README marks
 those paths as experimental.
 
-## Planned: an adapter interface
+## Adapters: one per ecosystem
 
-Node.js logic lives in `internal/adapter/node`, Go in `internal/adapter/golang` and Java in
-`internal/adapter/java`. They are called directly, and each keeps its own list on `Project`
-(`Pkgs`, `GoModules`, `JavaProjects`). The next refactor is a shared interface, shaped by these three real cases instead of guessed. All three adapters already
-produce `project.Runnable` values, which is the one seam `verify` uses today.
+`internal/adapter/adapter.go` defines the `Adapter` interface. Node.js, Go and Java each
+implement it (`internal/adapter/node`, `golang`, `java`), and `internal/adapters` lists them.
+The shared stages (`analyze`, `plan`, `verify`, `guide`, `cli`) loop over `adapters.All()` and
+do not know which ecosystems exist.
 
-A sketch, **not implemented and open to change**:
+| Method | Used by | Purpose |
+|---|---|---|
+| `Analyze` | analyze | Find this ecosystem's projects and record them on `Project` (read only) |
+| `Units`, `Markers` | analyze | How many were found; build files that should not be reported as "unsupported" |
+| `Detected`, `Warnings` | plan, guide | Lines for "Detected:" and for warnings |
+| `Prepare`, `Install` | plan | Steps before services start (for example `.env`), and dependency installs |
+| `Runnables` | verify | How to build and start each project |
+| `Next` | plan | Commands shown under "Next:" |
+| `Guide`, `GuideConfig` | guide | The "Run it" and "What you may need to change" Markdown |
 
-```go
-// Adapter knows one ecosystem (Node, Java, Flutter, ...).
-type Adapter interface {
-    Name() string
-    // Detect finds the parts of the repository this adapter understands.
-    Detect(root string) ([]Unit, error)
-    // Plan returns the steps to set a unit up (install, env, migrations).
-    Plan(u Unit, o Options) []Step
-    // Runnable says how to build and start a unit for verification.
-    Runnable(u Unit) (Runnable, bool)
-}
-```
+The ecosystems still keep their own list on `Project` (`Pkgs`, `GoModules`, `JavaProjects`).
+Folding those into one `Units` list is a later step. Some Node-only logic remains outside the
+adapter: docker compose handling, service detection from `package.json` hints and the
+"databases" section of the guide.
 
-If you want to add an ecosystem, please open an issue first so the interface can be agreed
-with you rather than around you.
+### Adding an ecosystem
+
+1. Open an issue first so we can agree the details.
+2. Create `internal/adapter/<name>` with an `Adapter` type that satisfies the interface
+   (`var _ adapter.Adapter = Adapter{}` makes the compiler check it).
+3. Add a list for its projects to `project.Project` and a `HasUnits` case in
+   `internal/project/units.go`.
+4. Add it to `adapters.All()`.
+5. Add a small fixture under `testdata/` and a test. `internal/adapters/adapters_test.go`
+   already checks that every adapter copes with an empty repository.
 
 ## Things deliberately not built
 
