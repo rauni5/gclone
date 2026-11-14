@@ -102,7 +102,7 @@ func BuildPlan(p *project.Project, o project.Options) []Planned {
 					fb = append(fb, "--ignore-scripts")
 				}
 				step.Fallback = func() error { return proc.RunStream(pkg.Dir, false, "npm", fb...) }
-				step.FallbackNote = "npm ci failed (lockfile out of sync?), so npm install was used instead"
+				step.FallbackNote = npmCIFallbackNote()
 			}
 			plan = append(plan, step)
 		}
@@ -228,6 +228,10 @@ func PrintPlan(p *project.Project, plan []Planned, o project.Options) {
 	for i, s := range plan {
 		fmt.Printf("  %d. %s   (in %s)\n       $ %s\n", i+1, s.Name, loc(s.Where), s.Cmd)
 	}
+}
+
+func npmCIFallbackNote() string {
+	return "npm ci failed because the lockfile may be out of sync, so gclone used npm install instead. Commit the updated lockfile, or report the issue upstream."
 }
 
 func loc(where string) string {
