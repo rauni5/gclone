@@ -9,6 +9,13 @@ include breaking changes.
 
 ### Added
 
+- Plain-language hints when a setup step fails (npm dependency conflicts, missing build
+  tools, port already in use, wrong Java or Go version, registry login, network and proxy
+  problems and more). Shown in the terminal and in the guide, always worded as a best guess.
+- Java support (early): Maven and Gradle projects, Spring Boot detection, Java version check,
+  `application.properties` / `application.yml` reading, database detection from JDBC URLs, a
+  dependency download step, and build plus start in `verify`. Not yet run end to end against
+  real builds.
 - Go support: gclone reads `go.mod`, warns when the installed Go is older than the module
   asks for, runs `go mod download`, and `verify` builds the module. gclone can now set up
   its own repository.
@@ -16,8 +23,6 @@ include breaking changes.
 - Release tooling: `scripts/build-release.sh`, a release workflow that publishes archives
   and SHA-256 checksums, CI and lint workflows.
 - Contributor documentation, issue and pull request templates, security and support policies.
-- `scripts/install.ps1` and `scripts/install.sh` run `go install` and add Go's bin folder to
-  the PATH when it is missing.
 
 ## [0.1.0] - first release, not yet tagged
 

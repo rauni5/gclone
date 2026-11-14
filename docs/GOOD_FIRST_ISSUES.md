@@ -195,3 +195,25 @@ port.
 - The warning appears in the plan output and in the guide.
 - Packages with unknown ports are ignored.
 - A test covers a clashing and a non-clashing layout.
+
+---
+
+## 10. Add a failure hint
+
+**Labels:** `good first issue`, `detection`
+
+**Why.** When a setup step fails, gclone looks for a known pattern in the output and prints
+what it probably means and what to try. Each real failure someone reports can become a new
+rule, so the list grows with use.
+
+**Where.** `internal/explain/explain.go` (the `rules` list) and `internal/explain/explain_test.go`.
+
+**What to do.** Pick an error you have seen (for example a Python-style `ModuleNotFoundError`
+is out of scope today, but Gradle, Maven, npm, Docker and git errors are all fine). Copy the
+real output into a test case, add a rule with a short plain-language meaning and a concrete
+next step. Keep the wording honest: "probably", not "this is".
+
+**Acceptance criteria**
+- A test with the real error text that expects the new rule id.
+- The rule does not match unrelated output (add a negative case if the pattern is broad).
+- The advice never tells people to disable security checks or use `sudo`.

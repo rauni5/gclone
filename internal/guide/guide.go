@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rauni5/gclone/internal/adapter/golang"
+	"github.com/rauni5/gclone/internal/adapter/java"
 	"github.com/rauni5/gclone/internal/buildinfo"
 	"github.com/rauni5/gclone/internal/project"
 	"github.com/rauni5/gclone/internal/repos"
@@ -39,6 +40,20 @@ func WriteGuide(p *project.Project) (string, error) {
 				res += ": " + strings.ReplaceAll(s.Note, "|", "/")
 			}
 			w("| %s (`%s`) | %s | %s |", s.Name, s.Cmd, s.Where, res)
+		}
+		var failed []project.Step
+		for _, s := range p.Steps {
+			if s.Hint != "" {
+				failed = append(failed, s)
+			}
+		}
+		if len(failed) > 0 {
+			w("")
+			w("**What probably went wrong** (a best guess from the error output, check the terminal log):")
+			w("")
+			for _, s := range failed {
+				w("- %s: %s", s.Name, s.Hint)
+			}
 		}
 	}
 	w("")
@@ -150,12 +165,50 @@ func WriteGuide(p *project.Project) (string, error) {
 		w("")
 	}
 
+	for _, j := range p.JavaProjects {
+		title := j.Rel
+		if j.Rel == "." {
+			title = filepath.Base(p.Dir)
+		}
+		w("### %s (Java, %s)", title, j.Build)
+		w("")
+		stack := "Java"
+		if j.JavaWanted > 0 {
+			stack += fmt.Sprintf(" %d", j.JavaWanted)
+		}
+		if j.SpringBoot {
+			stack = "Spring Boot, " + stack
+		}
+		w("Stack: %s", stack)
+		if j.SpringBoot && j.Port != "" {
+			w("")
+			w("Expected port: %s", j.Port)
+		}
+		w("")
+		w("```bash")
+		if j.Rel != "." {
+			w("cd %s", j.Rel)
+		}
+		if j.SpringBoot {
+			w("%s", java.Display(j, java.RunGoals(j)...))
+		}
+		w("%s   # build", java.Display(j, java.BuildGoals(j)...))
+		w("%s   # tests", java.Display(j, java.TestGoals()...))
+		w("```")
+		w("")
+	}
+
 	// Config changes
 	w("## What you may need to change")
 	w("")
 	any := false
 	for _, pkg := range p.Pkgs {
 		if guideEnv(&b, pkg) {
+			any = true
+		}
+	}
+	for _, j := range p.JavaProjects {
+		if guideJavaConfig(&b, j) {
 			any = true
 		}
 	}
@@ -279,6 +332,43 @@ func guideEnv(b *strings.Builder, pkg *project.Pkg) bool {
 			keys = append(keys, "`"+k+"`")
 		}
 		w("**Read by the code but not in the example file** (check the README for what they should be): %s", strings.Join(keys, ", "))
+		w("")
+	}
+	return true
+}
+
+// guideJavaConfig lists the settings in application.properties or application.yml that need
+// attention. Values are not printed, only names and reasons.
+func guideJavaConfig(b *strings.Builder, j *project.JavaProject) bool {
+	var blocking, review []project.EnvVar
+	for _, v := range j.Config {
+		switch v.Kind {
+		case "blocking":
+			blocking = append(blocking, v)
+		case "review":
+			review = append(review, v)
+		}
+	}
+	if len(blocking) == 0 && len(review) == 0 {
+		return false
+	}
+	w := func(format string, a ...interface{}) { fmt.Fprintf(b, format+"\n", a...) }
+	w("### Configuration: %s (application config)", verify.UnitLabel(j.Rel))
+	w("")
+	if len(blocking) > 0 {
+		w("**Set these first:**")
+		w("")
+		for _, v := range blocking {
+			w("- `%s`: %s", v.Key, v.Reason)
+		}
+		w("")
+	}
+	if len(review) > 0 {
+		w("**Works on defaults, change for real use:**")
+		w("")
+		for _, v := range review {
+			w("- `%s`: %s", v.Key, v.Reason)
+		}
 		w("")
 	}
 	return true

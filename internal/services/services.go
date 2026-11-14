@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/rauni5/gclone/internal/docker"
+	"github.com/rauni5/gclone/internal/explain"
 	"github.com/rauni5/gclone/internal/installer"
 	"github.com/rauni5/gclone/internal/proc"
 	"github.com/rauni5/gclone/internal/project"
@@ -58,7 +59,7 @@ func PrismaKind(dir string) string {
 	switch m[1] {
 	case "postgresql", "postgres":
 		return "postgres"
-	case "mysql":
+	case "mysql", "mariadb":
 		return "mysql"
 	case "mongodb":
 		return "mongodb"
@@ -66,7 +67,7 @@ func PrismaKind(dir string) string {
 	return ""
 }
 
-var urlSchemeRe = regexp.MustCompile(`^(postgres(?:ql)?|mysql|mongodb(?:\+srv)?|rediss?)://`)
+var urlSchemeRe = regexp.MustCompile(`^(postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|rediss?)://`)
 
 func schemeKind(scheme string) string {
 	switch strings.ToLower(scheme) {
@@ -127,19 +128,19 @@ func DetectNeeds(p *project.Project) []*project.Need {
 		n.Reasons = append(n.Reasons, r)
 	}
 
-	for _, pkg := range p.Pkgs {
+	scan := func(rel string, depKinds map[string]string, vars []project.EnvVar) {
 		for _, kind := range kindOrder {
-			if dep, ok := pkg.DepKinds[kind]; ok {
-				addReason(get(kind), fmt.Sprintf("%s: %s dependency", pkg.Rel, dep))
+			if dep, ok := depKinds[kind]; ok {
+				addReason(get(kind), fmt.Sprintf("%s: %s dependency", rel, dep))
 			}
 		}
-		for _, v := range pkg.EnvVars {
-			kind, u := parseServiceURL(v.Value)
+		for _, v := range vars {
+			kind, u := parseServiceURL(strings.TrimPrefix(v.Value, "jdbc:"))
 			if kind == "" {
 				continue
 			}
 			n := get(kind)
-			addReason(n, fmt.Sprintf("%s: %s", pkg.Rel, v.Key))
+			addReason(n, fmt.Sprintf("%s: %s", rel, v.Key))
 			if u == nil || v.Kind == "blocking" {
 				continue
 			}
@@ -161,6 +162,32 @@ func DetectNeeds(p *project.Project) []*project.Need {
 				n.Pass, _ = u.User.Password()
 			}
 			n.DB = strings.TrimPrefix(u.Path, "/")
+		}
+	}
+	for _, pkg := range p.Pkgs {
+		scan(pkg.Rel, pkg.DepKinds, pkg.EnvVars)
+	}
+	for _, j := range p.JavaProjects {
+		scan(j.Rel, j.DepKinds, j.Config)
+		// Spring keeps the login apart from the JDBC URL.
+		var user, pass string
+		for _, v := range j.Config {
+			switch v.Key {
+			case "spring.datasource.username":
+				user = v.Value
+			case "spring.datasource.password":
+				pass = v.Value
+			}
+		}
+		for _, v := range j.Config {
+			if v.Key != "spring.datasource.url" {
+				continue
+			}
+			if kind, _ := parseServiceURL(strings.TrimPrefix(v.Value, "jdbc:")); kind != "" {
+				if n := byKind[kind]; n != nil && !n.Remote && n.User == "" {
+					n.User, n.Pass = user, pass
+				}
+			}
 		}
 	}
 
@@ -549,6 +576,11 @@ func offerInstall(p *project.Project, o project.Options, n *project.Need) string
 		step.Status, step.Note = "failed", err.Error()
 		p.Steps = append(p.Steps, step)
 		fmt.Printf("[!!] failed: %v\n", err)
+		if h, ok := explain.FromError(err); ok {
+			explain.Print(h)
+			step.Hint = h.Line()
+			p.Steps[len(p.Steps)-1].Hint = step.Hint
+		}
 		return "failed: " + err.Error()
 	}
 	p.Steps = append(p.Steps, step)

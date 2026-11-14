@@ -11,6 +11,7 @@ import (
 	"github.com/rauni5/gclone/internal/analyze"
 	"github.com/rauni5/gclone/internal/buildinfo"
 	"github.com/rauni5/gclone/internal/docker"
+	"github.com/rauni5/gclone/internal/explain"
 	"github.com/rauni5/gclone/internal/fsx"
 	"github.com/rauni5/gclone/internal/guide"
 	"github.com/rauni5/gclone/internal/plan"
@@ -162,6 +163,9 @@ func run(o project.Options) error {
 		}
 		fmt.Printf("Cloning %s\n", url)
 		if err := proc.RunStream("", true, "git", "clone", url, dir); err != nil {
+			if h, ok := explain.FromError(err); ok {
+				explain.Print(h)
+			}
 			return fmt.Errorf("git clone failed: %w", err)
 		}
 	}
@@ -207,7 +211,7 @@ func setupRepo(abs string, o project.Options, depth int) (*project.Project, erro
 	plan.PrintPlan(p, steps, o)
 	services.PrintNeeds(p, o)
 	repos.PrintCompanions(p)
-	if len(p.Pkgs) == 0 && len(p.GoModules) == 0 {
+	if !p.HasUnits() {
 		return p, nil
 	}
 	if o.DryRun {

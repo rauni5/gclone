@@ -36,6 +36,7 @@ internal/
   analyze/               read a repository and build a Project (no side effects)
   adapter/node/          Node.js: packages, package manager, Node version, runnables
   adapter/golang/        Go: go.mod, Go version check, build command
+  adapter/java/          Java: Maven/Gradle, Spring Boot, application config, Java version
   compose/               docker compose file parsing
   envfile/               env example files: parse, classify, find variables used in code
   services/              which databases a project needs, start or install them, ask first
@@ -45,6 +46,7 @@ internal/
   repos/                 other repositories a project needs (README, local deps, submodules)
   verify/                build, start, port check, HTTP probe, report
   guide/                 write SETUP_GUIDE.md
+  explain/               plain-language hints for failed commands (a list of patterns)
   proc/                  run programs, process groups (unix and windows files)
   fsx/, ui/, buildinfo/  small helpers: files, prompts, version
 testdata/                small sample repositories used by tests
