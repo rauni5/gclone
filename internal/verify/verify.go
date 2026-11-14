@@ -17,9 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rauni5/gclone/internal/adapter/golang"
-	"github.com/rauni5/gclone/internal/adapter/java"
-	"github.com/rauni5/gclone/internal/adapter/node"
+	"github.com/rauni5/gclone/internal/adapters"
 	"github.com/rauni5/gclone/internal/analyze"
 	"github.com/rauni5/gclone/internal/proc"
 	"github.com/rauni5/gclone/internal/project"
@@ -339,12 +337,7 @@ func printCheck(c project.Check) {
 	}
 }
 
-func UnitLabel(l string) string {
-	if l == "" || l == "." {
-		return "repo root"
-	}
-	return l
-}
+func UnitLabel(l string) string { return project.UnitLabel(l) }
 
 // runVerify checks services, then builds, starts and probes each part in turn.
 func RunVerify(p *project.Project, o project.Options) *project.Report {
@@ -361,8 +354,10 @@ func RunVerify(p *project.Project, o project.Options) *project.Report {
 			printCheck(c)
 		}
 	}
-	runnables := append(node.Runnables(p, vo.NoBuild), golang.Runnables(p, vo.NoBuild)...)
-	runnables = append(runnables, java.Runnables(p, vo.NoBuild)...)
+	var runnables []project.Runnable
+	for _, a := range adapters.All() {
+		runnables = append(runnables, a.Runnables(p, vo.NoBuild)...)
+	}
 	for _, r := range runnables {
 		if ctx.Err() != nil {
 			break

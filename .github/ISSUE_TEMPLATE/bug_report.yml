@@ -13,7 +13,7 @@ body:
     attributes:
       label: gclone version
       description: Output of `gclone --version`
-      placeholder: gclone 0.1.0
+      placeholder: gclone 0.1.1
     validations:
       required: true
   - type: dropdown
