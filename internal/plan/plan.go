@@ -51,7 +51,6 @@ func BuildPlan(p *project.Project, o project.Options) []project.Planned {
 			})
 		}
 	}
-
 	for _, a := range adapters.All() {
 		plan = append(plan, a.Install(p, o)...)
 	}
@@ -116,6 +115,10 @@ func PrintPlan(p *project.Project, plan []project.Planned, o project.Options) {
 	for i, s := range plan {
 		fmt.Printf("  %d. %s   (in %s)\n       $ %s\n", i+1, s.Name, loc(s.Where), s.Cmd)
 	}
+}
+
+func npmCIFallbackNote() string {
+	return "npm ci failed because the lockfile may be out of sync, so gclone used npm install instead. Commit the updated lockfile, or report the issue upstream."
 }
 
 func loc(where string) string {
