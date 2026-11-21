@@ -87,8 +87,8 @@ The generated guide tells you what to do next:
   when your Node differs from `.nvmrc`, `.node-version`, `.tool-versions` or `engines`.
 - **Environment files.** Creates `.env` from `.env.example` (or a similar name). It never
   overwrites an existing `.env`.
-- **Environment triage.** Sorts variables into *must set* (empty or placeholder), *works on
-  defaults, change for real use* (secrets, database URLs) and *fine*. It also lists variables
+- **Environment triage.** Sorts variables into _must set_ (empty or placeholder), _works on
+  defaults, change for real use_ (secrets, database URLs) and _fine_. It also lists variables
   the source code reads that the example file does not mention.
 - **Databases and services.** Detects MongoDB, PostgreSQL, MySQL, Redis and RabbitMQ from
   dependencies, Prisma and connection URLs, and starts database services from a compose file.
@@ -107,7 +107,7 @@ The generated guide tells you what to do next:
   `gclone setup --resume` skips install steps that already succeeded at the same commit.
   The file holds names, commands and notes only, never variable values.
 - **Scripts and CI.** `--ci` never asks or reads the terminal and exits 1 when a step or the
-  verification fails. `--json` prints one JSON result on standard output. See
+  verification fails. `--json` Print one JSON result on standard output, all other messages go to standard error. With status, print the recorded state; with verify, print the verification report.
   [Use in scripts and CI](#use-in-scripts-and-ci).
 - **Dry run and safety prompts.** See [Safety](#safety-and-security).
 
@@ -198,20 +198,20 @@ gclone status      # what was done, what failed, what is out of date
 
 ## Supported today
 
-| Area | Status |
-|---|---|
-| Node.js with npm | Tested end to end: clone, install, `.env`, verify |
-| Node.js with pnpm, yarn, bun | Detected and invoked, not tested on real projects |
-| Java: Maven, Gradle, Spring Boot | Reads the build file (Java version, Spring Boot), uses `mvnw`/`gradlew` or `mvn`/`gradle`, reads `application.properties` / `application.yml` (port, database URL, settings that need values), detects PostgreSQL, MySQL/MariaDB, MongoDB and Redis, runs a dependency download, and `verify` builds and starts Spring Boot. **Detection is unit-tested; the real build and start have not been run end to end yet** (no access to Maven Central in my test environment), and Gradle commands are untested. Please report what happens on your projects |
-| Python: Django, FastAPI, Flask, Streamlit | Finds `requirements.txt`, `pyproject.toml`, `Pipfile` or `setup.py`, picks pip, Poetry, uv or Pipenv from the lock file, and reads the wanted Python version (`.python-version`, `requires-python`, Poetry, Pipfile, `runtime.txt`). For pip it creates a `.venv` inside the project and installs into it, never into your system Python. Finds the web framework and its start command (`manage.py runserver`, `uvicorn`, `flask run`, `streamlit run`) and default port, reads `.env.example`, detects PostgreSQL, MySQL, MongoDB and Redis from dependencies and URLs, and `verify` starts the app and checks it answers. **Tested end to end with a real Flask project** (venv, pip install, start, HTTP 200); Django, FastAPI, Streamlit, Poetry, uv and Pipenv are covered by detection tests only |
-| Flutter | Finds apps whose `pubspec.yaml` depends on Flutter, compares the installed Flutter and Dart with `environment:`, runs `flutter pub get`, creates `.env` from an example file, and notes what an app usually needs by hand: a `.env` asset that is missing, Firebase files (`google-services.json`, `GoogleService-Info.plist`, `firebase_options.dart`) and a backend on `localhost` / `10.0.2.2`. `verify` runs `flutter analyze` (errors only) and never starts the app, because it needs a device you choose. **Tested only against a stand-in `flutter` command, not the real SDK** (no Flutter in my test environment). Please report what happens on your projects |
-| Failure hints | A list of about 20 common failures (npm conflicts, missing build tools, port in use, wrong Java or Go version, registry login, network and proxy). It is a best guess from the output and says so. Unknown errors get no hint |
-| Go modules | `go.mod` read, installed Go compared with the `go` / `toolchain` line, `go mod download`, build check in `verify`. Nothing is started. Tested on gclone itself and one small fixture |
-| Node version check | `.nvmrc`, `.node-version`, `.tool-versions`, `engines`. It warns, it does not switch versions (use nvm, fnm or mise for that) |
-| Repository layout | Root plus one folder level. Workspaces are analyzed at the root only |
-| MongoDB, PostgreSQL, MySQL, Redis, RabbitMQ | Detection tested. Starting them in Docker tested with a stand-in `docker` command, not with a real Docker engine |
-| Compose files | Database services only (postgres, mysql, mariadb, mongo, redis, valkey, rabbitmq). It never starts your app's own containers |
-| Rust, PHP, Ruby | Detected and reported only. No setup yet |
+| Area                                        | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node.js with npm                            | Tested end to end: clone, install, `.env`, verify                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Node.js with pnpm, yarn, bun                | Detected and invoked, not tested on real projects                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Java: Maven, Gradle, Spring Boot            | Reads the build file (Java version, Spring Boot), uses `mvnw`/`gradlew` or `mvn`/`gradle`, reads `application.properties` / `application.yml` (port, database URL, settings that need values), detects PostgreSQL, MySQL/MariaDB, MongoDB and Redis, runs a dependency download, and `verify` builds and starts Spring Boot. **Detection is unit-tested; the real build and start have not been run end to end yet** (no access to Maven Central in my test environment), and Gradle commands are untested. Please report what happens on your projects                                                                                                                                                                                                                                                  |
+| Python: Django, FastAPI, Flask, Streamlit   | Finds `requirements.txt`, `pyproject.toml`, `Pipfile` or `setup.py`, picks pip, Poetry, uv or Pipenv from the lock file, and reads the wanted Python version (`.python-version`, `requires-python`, Poetry, Pipfile, `runtime.txt`). For pip it creates a `.venv` inside the project and installs into it, never into your system Python. Finds the web framework and its start command (`manage.py runserver`, `uvicorn`, `flask run`, `streamlit run`) and default port, reads `.env.example`, detects PostgreSQL, MySQL, MongoDB and Redis from dependencies and URLs, and `verify` starts the app and checks it answers. **Tested end to end with a real Flask project** (venv, pip install, start, HTTP 200); Django, FastAPI, Streamlit, Poetry, uv and Pipenv are covered by detection tests only |
+| Flutter                                     | Finds apps whose `pubspec.yaml` depends on Flutter, compares the installed Flutter and Dart with `environment:`, runs `flutter pub get`, creates `.env` from an example file, and notes what an app usually needs by hand: a `.env` asset that is missing, Firebase files (`google-services.json`, `GoogleService-Info.plist`, `firebase_options.dart`) and a backend on `localhost` / `10.0.2.2`. `verify` runs `flutter analyze` (errors only) and never starts the app, because it needs a device you choose. **Tested only against a stand-in `flutter` command, not the real SDK** (no Flutter in my test environment). Please report what happens on your projects                                                                                                                                 |
+| Failure hints                               | A list of about 20 common failures (npm conflicts, missing build tools, port in use, wrong Java or Go version, registry login, network and proxy). It is a best guess from the output and says so. Unknown errors get no hint                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Go modules                                  | `go.mod` read, installed Go compared with the `go` / `toolchain` line, `go mod download`, build check in `verify`. Nothing is started. Tested on gclone itself and one small fixture                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Node version check                          | `.nvmrc`, `.node-version`, `.tool-versions`, `engines`. It warns, it does not switch versions (use nvm, fnm or mise for that)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Repository layout                           | Root plus one folder level. Workspaces are analyzed at the root only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| MongoDB, PostgreSQL, MySQL, Redis, RabbitMQ | Detection tested. Starting them in Docker tested with a stand-in `docker` command, not with a real Docker engine                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Compose files                               | Database services only (postgres, mysql, mariadb, mongo, redis, valkey, rabbitmq). It never starts your app's own containers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Rust, PHP, Ruby                             | Detected and reported only. No setup yet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ## How it works
 
@@ -226,15 +226,15 @@ flowchart LR
     G --> H[SETUP_GUIDE.md]
 ```
 
-| Component | Package | Job |
-|---|---|---|
-| CLI and flow | `internal/cli` | Argument parsing, `setupRepo`, prompts |
-| Detection | `internal/analyze`, `internal/adapter/node`, `internal/adapter/golang`, `internal/adapter/java`, `internal/adapter/python`, `internal/adapter/flutter`, `internal/envfile`, `internal/compose` | Packages, package manager, Node version, env files, compose files |
-| Plan and execute | `internal/plan` | Builds the list of steps, runs them |
-| Services | `internal/services`, `internal/docker`, `internal/installer` | Needed databases, Docker states, install and start options |
-| Other repositories | `internal/repos` | Finds, asks about and sets up dependent repositories |
-| Verification | `internal/verify`, `internal/proc` | Build, start, port check, HTTP probe, process cleanup |
-| Guide | `internal/guide` | Writes `SETUP_GUIDE.md` |
+| Component          | Package                                                                                                                                                                                        | Job                                                               |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| CLI and flow       | `internal/cli`                                                                                                                                                                                 | Argument parsing, `setupRepo`, prompts                            |
+| Detection          | `internal/analyze`, `internal/adapter/node`, `internal/adapter/golang`, `internal/adapter/java`, `internal/adapter/python`, `internal/adapter/flutter`, `internal/envfile`, `internal/compose` | Packages, package manager, Node version, env files, compose files |
+| Plan and execute   | `internal/plan`                                                                                                                                                                                | Builds the list of steps, runs them                               |
+| Services           | `internal/services`, `internal/docker`, `internal/installer`                                                                                                                                   | Needed databases, Docker states, install and start options        |
+| Other repositories | `internal/repos`                                                                                                                                                                               | Finds, asks about and sets up dependent repositories              |
+| Verification       | `internal/verify`, `internal/proc`                                                                                                                                                             | Build, start, port check, HTTP probe, process cleanup             |
+| Guide              | `internal/guide`                                                                                                                                                                               | Writes `SETUP_GUIDE.md`                                           |
 
 More detail for contributors is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -242,23 +242,23 @@ More detail for contributors is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 gclone has **no configuration file**. Behaviour is controlled with flags.
 
-| Flag | Meaning |
-|---|---|
-| `-n`, `--dry-run` | Clone and analyze, show the plan, run nothing else |
-| `-y`, `--yes` | Skip the `Run this plan?` and git submodule confirmations (database, Docker, other-repository and verify prompts still apply) |
-| `--ignore-scripts` | Pass `--ignore-scripts` to the package manager |
-| `--no-install` | Skip installing dependencies |
-| `--no-services` | Do not start database services from compose files |
-| `--install-services` | Take the first safe option to start a missing database without asking. It never installs Docker itself |
-| `--clone-deps` | Clone and set up other repositories the project needs without asking |
-| `--no-deps` | Do not look for other repositories |
-| `--verify` | Run the verification after setup without asking |
-| `--no-build` | Skip the build step when verifying |
-| `--resume` | With `setup`: skip install steps that already succeeded at the same commit |
-| `--ci` | For scripts and CI: never ask or read the terminal (every question is answered no), implies `--yes`, exit code 1 when a step or the verification fails. Add `--verify` to verify as well |
-| `--json` | Print one JSON result on standard output, all other messages go to standard error. With `status`, print the recorded state |
-| `--timeout=SECONDS` | How long verify waits for the app to listen (default 60) |
-| `-v`, `--version` / `-h`, `--help` | Version / help |
+| Flag                               | Meaning                                                                                                                                                                                  |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-n`, `--dry-run`                  | Clone and analyze, show the plan, run nothing else                                                                                                                                       |
+| `-y`, `--yes`                      | Skip the `Run this plan?` and git submodule confirmations (database, Docker, other-repository and verify prompts still apply)                                                            |
+| `--ignore-scripts`                 | Pass `--ignore-scripts` to the package manager                                                                                                                                           |
+| `--no-install`                     | Skip installing dependencies                                                                                                                                                             |
+| `--no-services`                    | Do not start database services from compose files                                                                                                                                        |
+| `--install-services`               | Take the first safe option to start a missing database without asking. It never installs Docker itself                                                                                   |
+| `--clone-deps`                     | Clone and set up other repositories the project needs without asking                                                                                                                     |
+| `--no-deps`                        | Do not look for other repositories                                                                                                                                                       |
+| `--verify`                         | Run the verification after setup without asking                                                                                                                                          |
+| `--no-build`                       | Skip the build step when verifying                                                                                                                                                       |
+| `--resume`                         | With `setup`: skip install steps that already succeeded at the same commit                                                                                                               |
+| `--ci`                             | For scripts and CI: never ask or read the terminal (every question is answered no), implies `--yes`, exit code 1 when a step or the verification fails. Add `--verify` to verify as well |
+| `--json`                           | Print one JSON result on standard output, all other messages go to standard error. With `status`, print the recorded state                                                               |
+| `--timeout=SECONDS`                | How long verify waits for the app to listen (default 60)                                                                                                                                 |
+| `-v`, `--version` / `-h`, `--help` | Version / help                                                                                                                                                                           |
 
 Commands: `gclone <repo> [directory]`, `gclone setup [directory]`, `gclone verify [directory]`,
 `gclone status [directory]` (exit code 1 when a step or the last verification failed),
@@ -301,16 +301,16 @@ gclone status --json                 # the recorded state as JSON, exit 1 if som
 `--json` keeps standard output clean: the one JSON document is the only thing on it, and
 every other message goes to standard error. The fields:
 
-| Field | Meaning |
-|---|---|
-| `schema`, `gclone` | JSON format version and gclone version |
-| `ok` | `true` when there was no error, no failed step and the verdict is not `NOT READY` or `INTERRUPTED` |
-| `dir`, `commit` | The folder and the short commit |
-| `detected`, `warnings` | The lines of the "Detected:" and "Warnings:" lists |
-| `steps` | Each step with `where`, `name`, `cmd`, `status` (`ok` or `failed`), `note` and `hint` |
-| `services` | Databases and other services the project needs, with `kind`, `port`, `remote` |
-| `verify` | `verdict`, counts, and every check with `status` (`pass`, `warn`, `fail`, `skip`) |
-| `error` | The error message, when there was one |
+| Field                  | Meaning                                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| `schema`, `gclone`     | JSON format version and gclone version                                                             |
+| `ok`                   | `true` when there was no error, no failed step and the verdict is not `NOT READY` or `INTERRUPTED` |
+| `dir`, `commit`        | The folder and the short commit                                                                    |
+| `detected`, `warnings` | The lines of the "Detected:" and "Warnings:" lists                                                 |
+| `steps`                | Each step with `where`, `name`, `cmd`, `status` (`ok` or `failed`), `note` and `hint`              |
+| `services`             | Databases and other services the project needs, with `kind`, `port`, `remote`                      |
+| `verify`               | `verdict`, counts, and every check with `status` (`pass`, `warn`, `fail`, `skip`)                  |
+| `error`                | The error message, when there was one                                                              |
 
 Like the state file, it holds names, commands and notes, never variable values. Fields may be
 added; `schema` changes only when one is removed or changes meaning. A GitHub Actions job can
@@ -357,13 +357,13 @@ or use `--dry-run` first and read the plan.
   built from repository content.
 - **Asking first.** The plan is shown before anything runs. Installing or starting a
   database, installing or starting Docker, cloning another repository, and running the
-  verification each ask separately. Those default to *no* or *skip*. When it needs
+  verification each ask separately. Those default to _no_ or _skip_. When it needs
   administrator rights (apt) it runs `sudo` visibly and you enter your password yourself.
 - **Install scripts.** Before installing, gclone lists the repository's own `preinstall`,
   `install`, `postinstall` and `prepare` scripts. `--ignore-scripts` stops them and also
   stops your dependencies' install scripts.
 - **Secrets.** `.env` is created with owner-only permissions, and an existing `.env` is never
-  overwritten. The guide and the terminal output list variable *names* and notes, not their
+  overwritten. The guide and the terminal output list variable _names_ and notes, not their
   values. There are two exceptions: `PORT` is shown as the expected port, and when gclone
   creates a database container the guide shows that container's login, which comes from the
   example file's connection URL.
@@ -382,15 +382,18 @@ To report a vulnerability, see [SECURITY.md](SECURITY.md).
 Priorities, in order. Dates are deliberately absent.
 
 **Next**
+
 - Check the Flutter adapter against the real SDK
 - Deeper Java checks: a real end-to-end run of Maven and Gradle builds
 
 **Then**
+
 - Reuse an existing `mise.toml`, `.tool-versions`, Dev Container or Makefile `setup` target
 - `gclone export devcontainer`
 
 **Later, if there is demand**
-- An optional LLM planner that only *suggests* steps, always validated and approved by you
+
+- An optional LLM planner that only _suggests_ steps, always validated and approved by you
 - Analyze a repository before cloning it
 - Multi-repository workspaces
 - A migration report: `gclone analyze --port-to <language>` would list what a project uses (routes, database, packages) and the usual equivalent in another stack, as a checklist. It would not translate code
@@ -401,13 +404,13 @@ From each project's own documentation, read in November 2026. Where a page does 
 mention something, that means "not documented", not "not supported". Please open an issue if
 anything here is out of date.
 
-| Tool | What it is | Needs a config file in the repo? |
-|---|---|---|
-| **gclone** | Clone, set up services and env, verify, write a guide | No |
-| [Rex](https://github.com/rexrun-dev/rex) | Zero-config project runner for many stacks, with `rex clone <url>` | No (optional `rex.toml`) |
-| [Bivvy](https://bivvy.dev/docs/) | Declarative setup steps with state tracking | Yes (`.bivvy/config.yml`) |
-| [mise](https://mise.jdx.dev/) | Tool versions, env vars and tasks | Yes (`mise.toml`) |
-| [Dev Containers](https://containers.dev/) | Containerized environment spec | Yes (`devcontainer.json`) |
+| Tool                                      | What it is                                                         | Needs a config file in the repo? |
+| ----------------------------------------- | ------------------------------------------------------------------ | -------------------------------- |
+| **gclone**                                | Clone, set up services and env, verify, write a guide              | No                               |
+| [Rex](https://github.com/rexrun-dev/rex)  | Zero-config project runner for many stacks, with `rex clone <url>` | No (optional `rex.toml`)         |
+| [Bivvy](https://bivvy.dev/docs/)          | Declarative setup steps with state tracking                        | Yes (`.bivvy/config.yml`)        |
+| [mise](https://mise.jdx.dev/)             | Tool versions, env vars and tasks                                  | Yes (`mise.toml`)                |
+| [Dev Containers](https://containers.dev/) | Containerized environment spec                                     | Yes (`devcontainer.json`)        |
 
 - **Rex is the closest.** `rex clone` also clones, detects the stack and installs
   dependencies, and Rex supports many more languages than gclone does today. gclone's

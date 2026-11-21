@@ -160,3 +160,60 @@ func TestParseDoctor(t *testing.T) {
 		t.Errorf("%+v", o)
 	}
 }
+
+// TestVerifyJSONRoundTrip verifies that a verification report round-trips through
+// the --json output for READY, READY WITH WARNINGS and NOT READY. It checks the
+// schema version, the verify block and the ok flag, so the output stays machine
+// readable for the three verdicts the issue names.
+func TestVerifyJSONRoundTrip(t *testing.T) {
+	cases := []struct {
+		verdict string
+		ok      bool
+	}{
+		{"READY", true},
+		{"READY WITH WARNINGS", true},
+		{"NOT READY", false},
+	}
+	for _, c := range cases {
+		t.Run(c.verdict, func(t *testing.T) {
+			checks := []project.Check{
+				{Name: "env", Status: "skip"},
+				{Name: "start", Status: "pass", Detail: "listening"},
+			}
+			if c.verdict != "READY" {
+				checks = append(checks, project.Check{Name: "http", Status: "warn", Detail: "slow"})
+			}
+			p := &project.Project{
+				Dir: "/x",
+				Verify: &project.Report{
+					Dir:     "/x",
+					Verdict: c.verdict,
+					Units:   []project.UnitReport{{Label: ". (Python)", Checks: checks}},
+				},
+			}
+			var b bytes.Buffer
+			if err := WriteResult(&b, BuildResult("/x", p, nil)); err != nil {
+				t.Fatal(err)
+			}
+			var got Result
+			if err := json.Unmarshal(b.Bytes(), &got); err != nil {
+				t.Fatalf("invalid JSON: %v\n%s", err, b.String())
+			}
+			if got.Schema != ResultSchema {
+				t.Errorf("schema = %d, want %d", got.Schema, ResultSchema)
+			}
+			if got.Verify == nil {
+				t.Fatal("verify block is missing")
+			}
+			if got.Verify.Verdict != c.verdict {
+				t.Errorf("verdict = %q, want %q", got.Verify.Verdict, c.verdict)
+			}
+			if got.OK != c.ok {
+				t.Errorf("ok = %v, want %v", got.OK, c.ok)
+			}
+			if len(got.Verify.Units) != 1 || len(got.Verify.Units[0].Checks) != len(checks) {
+				t.Errorf("units = %+v", got.Verify.Units)
+			}
+		})
+	}
+}
