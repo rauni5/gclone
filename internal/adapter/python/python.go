@@ -195,8 +195,12 @@ var kindRes = []struct {
 	{"redis", depRe(`redis|aioredis|django-redis`)},
 }
 
-// readDeps returns the text of the files that list dependencies.
-func readDeps(dir string) (all, pyproject, pipfile, reqName string) {
+// readDeps returns the text of the files that list dependencies, the main pip
+// requirements file, and any other requirements files found on disk. The extra
+// files (e.g. requirements-dev.txt or requirements/test.txt) are reported in the
+// guide but never installed, so a user who needs those tools can install them
+// deliberately.
+func readDeps(dir string) (all, pyproject, pipfile, reqName string, extra []string) {
 	var b strings.Builder
 	read := func(name string) string {
 		data, err := os.ReadFile(filepath.Join(dir, name))
@@ -208,7 +212,9 @@ func readDeps(dir string) (all, pyproject, pipfile, reqName string) {
 		return string(data)
 	}
 	reqName = ""
+	seen := map[string]bool{}
 	for _, n := range []string{"requirements.txt", "requirements/base.txt", "requirements/prod.txt"} {
+		seen[n] = true
 		if t := read(n); t != "" && reqName == "" {
 			reqName = n
 		}
@@ -217,7 +223,27 @@ func readDeps(dir string) (all, pyproject, pipfile, reqName string) {
 	pipfile = read("Pipfile")
 	read("setup.py")
 	read("setup.cfg")
-	return b.String(), pyproject, pipfile, reqName
+
+	// Extra requirements files: common names at the root, then any other .txt
+	// files under requirements/. They are reported in the guide, never installed.
+	for _, n := range []string{"requirements-dev.txt", "requirements/test.txt", "requirements/dev.txt"} {
+		if fsx.FileExists(filepath.Join(dir, n)) {
+			seen[n] = true
+			extra = append(extra, n)
+		}
+	}
+	if entries, err := os.ReadDir(filepath.Join(dir, "requirements")); err == nil {
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".txt") {
+				continue
+			}
+			rel := "requirements/" + e.Name()
+			if !seen[rel] {
+				extra = append(extra, rel)
+			}
+		}
+	}
+	return b.String(), pyproject, pipfile, reqName, extra
 }
 
 // Manager decides which tool installs the dependencies.
@@ -274,11 +300,12 @@ func appTarget(dir string, re *regexp.Regexp) (module, variable, file string, fa
 
 // Analyze reads one Python project. interpreter is the installed Python's version, or "".
 func Analyze(root, dir, interpreter string) *project.PyProject {
-	deps, pyproject, pipfile, reqName := readDeps(dir)
+	deps, pyproject, pipfile, reqName, extra := readDeps(dir)
 	y := &project.PyProject{
 		Dir: dir, Rel: fsx.Rel(root, dir), Name: filepath.Base(dir),
 		Manager: Manager(dir, pyproject), Requirements: reqName,
-		PyInstalled: interpreter, DepKinds: map[string]string{},
+		ExtraRequirements: extra,
+		PyInstalled:       interpreter, DepKinds: map[string]string{},
 	}
 	if y.Rel == "." {
 		y.Name = filepath.Base(root)

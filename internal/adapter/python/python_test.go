@@ -187,3 +187,33 @@ func TestFindProjectsSkipsVenv(t *testing.T) {
 		t.Errorf("got %v", got)
 	}
 }
+
+// TestExtraRequirementsDetected verifies that requirements files other than the
+// main one are found but not treated as the install target. Issue #32.
+func TestExtraRequirementsDetected(t *testing.T) {
+	d := t.TempDir()
+	write(t, d, "requirements.txt", "flask\n")
+	write(t, d, "requirements-dev.txt", "pytest\n")
+	write(t, d, "requirements/test.txt", "coverage\n")
+
+	y := Analyze(d, d, "3.11")
+	if y.Requirements != "requirements.txt" {
+		t.Fatalf("main requirements = %q", y.Requirements)
+	}
+	want := map[string]bool{
+		"requirements-dev.txt":  true,
+		"requirements/test.txt": true,
+	}
+	if len(y.ExtraRequirements) != len(want) {
+		t.Fatalf("extra = %v, want %d entries", y.ExtraRequirements, len(want))
+	}
+	for _, r := range y.ExtraRequirements {
+		if !want[r] {
+			t.Fatalf("unexpected extra requirement %q", r)
+		}
+		delete(want, r)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing extra requirements: %v", want)
+	}
+}

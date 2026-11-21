@@ -245,6 +245,12 @@ func (Adapter) Guide(p *project.Project) string {
 			w("%s manage.py test   # tests", runner)
 		}
 		w("```")
+		if len(y.ExtraRequirements) > 0 {
+			w("")
+			for _, r := range y.ExtraRequirements {
+				w("- Also found `%s` (not installed). Run `pip install -r %s` if you need those tools.", r, r)
+			}
+		}
 		w("")
 	}
 	return b.String()
